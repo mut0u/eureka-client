@@ -68,27 +68,30 @@
 (defn register
   "Registers the app-id at the Eureka server and sends a heartbeat every 30
    seconds."
-  [eureka-host eureka-port app-id own-port]
-  (let [host-id (fetch-hostname)  ;;(str (.getHostAddress (java.net.InetAddress/getLocalHost)) "-" (rand-int 10000))
-        app-url (app-path eureka-host eureka-port app-id)]
-    (http/post (app-path eureka-host eureka-port app-id)
-               (assoc
-                request-opts
-                :form-params
-                {:instance {:hostName host-id
-                            :app app-id
-                            :ipAddr (.getHostAddress (java.net.InetAddress/getLocalHost))
-                            :vipAddress app-id
-                            :secureVipAddress app-id
-                            :status "UP"
-                            :port {:$ own-port (keyword "@enabled")  true}
-                            :securePort {:$ (str "8" own-port) (keyword "@enabled")  true}
-                            :healthCheckUrl (str app-url "/healthcheck"),
-                            :statusPageUrl (str app-url "/status"),
-                            :homePageUrl (str app-url "/home")
-                            :dataCenterInfo {(keyword "@class") "com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo" :name "MyOwn"}}}
-                ))
-    (tick 30000 send-heartbeat eureka-host eureka-port app-id host-id)))
+  ([eureka-host eureka-port app-id own-port]
+   (register eureka-host eureka-port app-id own-port {}))
+  ([eureka-host eureka-port app-id own-port metadata]
+   (let [host-id (fetch-hostname)  ;;(str (.getHostAddress (java.net.InetAddress/getLocalHost)) "-" (rand-int 10000))
+         app-url (app-path eureka-host eureka-port app-id)]
+     (http/post (app-path eureka-host eureka-port app-id)
+                (assoc
+                 request-opts
+                 :form-params
+                 {:instance {:hostName host-id
+                             :app app-id
+                             :ipAddr (.getHostAddress (java.net.InetAddress/getLocalHost))
+                             :vipAddress app-id
+                             :secureVipAddress app-id
+                             :status "UP"
+                             :port {:$ own-port (keyword "@enabled")  true}
+                             :securePort {:$ (str "8" own-port) (keyword "@enabled")  true}
+                             :healthCheckUrl (str app-url "/healthcheck"),
+                             :statusPageUrl (str app-url "/status"),
+                             :homePageUrl (str app-url "/home")
+                             :dataCenterInfo {(keyword "@class") "com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo" :name "MyOwn"}
+                             :metadata metadata}}
+                 ))
+     (tick 30000 send-heartbeat eureka-host eureka-port app-id host-id))))
 
 (defn remove-instance
   "remvoe the instance by instanceid"
